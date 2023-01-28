@@ -1,21 +1,22 @@
 package com.example.models;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDate;
-
 import com.example.dbhandler.PostgresConnector;
-
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+
+import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class Student extends Person {
     private int level;
 
+
     /**
      * Constructor
+     *
      * @param id
      * @param firstName
      * @param lastName
@@ -25,13 +26,15 @@ public class Student extends Person {
      * @param level
      */
     public Student(String id, String firstName, String lastName, LocalDate birthday, String email, String phoneNumber,
-            int level) {
+                   int level) {
         super(id, firstName, lastName, birthday, email, phoneNumber);
         this.level = level;
     }
 
+
     /**
      * Gets level
+     *
      * @return
      */
     public int getLevel() {
@@ -40,12 +43,13 @@ public class Student extends Person {
 
     /**
      * Sets level
+     *
      * @param level
      */
     public void setLevel(int level) {
         this.level = level;
-    }    
-    
+    }
+
     /**
      * Prints the student
      */
@@ -64,6 +68,7 @@ public class Student extends Person {
 
     /**
      * Gets simple string property from id
+     *
      * @return SimpleStringProperty
      */
     public SimpleStringProperty idProperty() {
@@ -72,6 +77,7 @@ public class Student extends Person {
 
     /**
      * Gets simple string property from name
+     *
      * @return
      */
     public SimpleStringProperty firstNameProperty() {
@@ -80,6 +86,7 @@ public class Student extends Person {
 
     /**
      * Gets simple string property from email
+     *
      * @return
      */
     public SimpleStringProperty emailProperty() {
@@ -88,6 +95,7 @@ public class Student extends Person {
 
     /**
      * Gets simple string property from lastName
+     *
      * @return
      */
     public SimpleStringProperty lastNameProperty() {
@@ -96,6 +104,7 @@ public class Student extends Person {
 
     /**
      * Gets simple string property from age
+     *
      * @return
      */
     public SimpleIntegerProperty ageProperty() {
@@ -103,21 +112,104 @@ public class Student extends Person {
     }
 
     public void save() {
-        final String sql = "INSERT INTO student" +
-        " (id, first_name, last_name, email) VALUES " +
-        " (?, ?, ?, ?);";
+        if (!findById(this.getId()).isPresent()) {
+            final String sql = "INSERT INTO university.student" +
+                    " (id, first_name, last_name, email) VALUES " +
+                    " (?, ?, ?, ?);";
+            PostgresConnector pgConnector = new PostgresConnector();
+            Connection connection = pgConnector.getConnection();
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql);) {
+                preparedStatement.setString(1, this.getId());
+                preparedStatement.setString(2, this.getFirstName());
+                preparedStatement.setString(3, this.getLastName());
+                preparedStatement.setString(4, this.getEmail());
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                // print SQL exception information
+                System.out.println(e.getMessage());
+            }
+        } else {
+
+            final String sql = "UPDATE university.student SET first_name = ? , last_name ? , email = ? WHERE ID = ?";
+            PostgresConnector pgConnector = new PostgresConnector();
+            Connection connection = pgConnector.getConnection();
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql);) {
+
+                preparedStatement.setString(1, this.getFirstName());
+                preparedStatement.setString(2, this.getLastName());
+                preparedStatement.setString(3, this.getEmail());
+                preparedStatement.setString(4, this.getId());
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                // print SQL exception information
+               e.printStackTrace();
+            }
+        }
+
+    }
+
+    public List<Student> findAll() {
+        final String sql = "select * from university.student ";
+        final List<Student> result = new ArrayList<>();
+        PostgresConnector pgConnector = new PostgresConnector();
+        try (Connection connection = pgConnector.getConnection()) {
+            Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                Student student = new Student(
+                        rs.getString("id"),
+                        rs.getString("first_name"),
+                        rs.getString("level"),
+                        LocalDate.now(),
+                        rs.getString("email"),
+                        rs.getString("last_name"),
+                        rs.getInt("phone_number"));
+                result.add(student);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+
+    public void delete(String id) {
+        final String sql = "delete from university.student where id = ?";
         PostgresConnector pgConnector = new PostgresConnector();
         Connection connection = pgConnector.getConnection();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql);){
-            preparedStatement.setString(1, this.getId());
-            preparedStatement.setString(2, this.getFirstName());
-            preparedStatement.setString(3, this.getLastName());
-            preparedStatement.setString(4, this.getEmail());
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql);) {
+            preparedStatement.setString(1, id);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            // print SQL exception information
             System.out.println(e.getMessage());
         }
-       
+
+    }
+
+    public Optional<Student> findById(String id) {
+        final String sql = "select * from university.student where id = ? ";
+        Optional<Student> result = Optional.empty();
+        PostgresConnector pgConnector = new PostgresConnector();
+        try (Connection connection = pgConnector.getConnection()) {
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            stmt.setString(1, id);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Student student = new Student(
+                        rs.getString("id"),
+                        rs.getString("first_name"),
+                        rs.getString("level"),
+                        LocalDate.now(),
+                        rs.getString("email"),
+                        rs.getString("last_name"),
+                        rs.getInt("phone_number"));
+                result = Optional.of(student);
+            }
+
+        } catch (SQLException e) {
+           e.printStackTrace();
+        }
+        return result;
     }
 }

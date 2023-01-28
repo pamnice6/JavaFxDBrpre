@@ -6,9 +6,9 @@ import java.sql.DriverManager;
 public class PostgresConnector {
     private final String HOST = "localhost";
     private final String PORT = "5432";
-    private final String DB = "rpriverae";
+    private final String DB = "db_university";
     private final String USER = "postgres";
-    private final String PASSWORD = "Puce2023";
+    private final String PASSWORD = "sa.1";
 
     /**
      * @return Connection
