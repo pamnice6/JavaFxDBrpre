@@ -130,7 +130,7 @@ public class Student extends Person {
             }
         } else {
 
-            final String sql = "UPDATE university.student SET first_name = ? , last_name ? , email = ? WHERE ID = ?";
+            final String sql = "UPDATE university.student SET first_name = ?, last_name= ?  , email = ? WHERE ID = ? ";
             PostgresConnector pgConnector = new PostgresConnector();
             Connection connection = pgConnector.getConnection();
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql);) {
@@ -159,11 +159,11 @@ public class Student extends Person {
                 Student student = new Student(
                         rs.getString("id"),
                         rs.getString("first_name"),
-                        rs.getString("level"),
+                        rs.getString("last_name"),
                         LocalDate.now(),
                         rs.getString("email"),
-                        rs.getString("last_name"),
-                        rs.getInt("phone_number"));
+                        rs.getString("phone_number"),
+                        rs.getInt("level"));
                 result.add(student);
             }
 
